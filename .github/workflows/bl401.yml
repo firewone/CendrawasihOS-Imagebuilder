@@ -1,0 +1,38 @@
+name: Build OpenWrt 19.07 for Bolt BL401 (Dumb AP)
+
+on:
+  workflow_dispatch:  # Jalankan manual dari tab Actions
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential subversion git-core libncurses5-dev zlib1g-dev gawk flex quilt libssl-dev xsltproc libxml-parser-perl unzip python3 wget curl file bc time ccache rsync
+
+      - name: Download OpenWrt 19.07 ImageBuilder for ramips/mt7620
+        run: |
+          wget https://downloads.openwrt.org/releases/19.07.10/targets/ramips/mt7620/openwrt-imagebuilder-19.07.10-ramips-mt7620.Linux-x86_64.tar.xz
+          tar -xvf openwrt-imagebuilder-19.07.10-ramips-mt7620.Linux-x86_64.tar.xz
+          cd openwrt-imagebuilder-*
+
+      - name: Build custom sysupgrade.bin for BL401 (port ASUS RT-N14U)
+        run: |
+          cd openwrt-imagebuilder-*
+          make image PROFILE="asus_rt-n14u" \
+            PACKAGES="luci luci-base luci-app-firewall kmod-usb-core kmod-usb2 kmod-usb-ohci kmod-usb-uhci wpad-mini relayd luci-proto-relay -firewall -odhcpd -odhcp6c -ppp -ppp-mod-pppoe -ip6tables -kmod-ipt-nat6" \
+            FILES=../files/  # Kalau ada folder files untuk custom config
+          ls bin/targets/ramips/mt7620/*sysupgrade.bin || echo "No bin found, check log"
+
+      - name: Upload artifact (sysupgrade.bin)
+        uses: actions/upload-artifact@v4
+        with:
+          name: bl401-sysupgrade-bin
+          path: openwrt-imagebuilder-*/bin/targets/ramips/mt7620/*sysupgrade.bin
+          if-no-files-found: error
