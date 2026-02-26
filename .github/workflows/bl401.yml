@@ -1,4 +1,4 @@
-name: Build OpenWrt 22.03.7 Ultra Minimal for BL401
+name: Build OpenWrt 22.03.7 Minimal No Clash for BL401
 
 on:
   workflow_dispatch:
@@ -22,18 +22,18 @@ jobs:
           tar -xvf imagebuilder.tar.xz
           ls -la
 
-      - name: Build ultra minimal sysupgrade.bin for BL401
+      - name: Build minimal sysupgrade.bin for BL401
         run: |
           cd openwrt-imagebuilder-22.03.7-ramips-mt7620.Linux-x86_64
           make info | grep -i n14u  # Debug profile
           make image PROFILE="asus_rt-n14u" \
-            PACKAGES="wpad-mini luci-base luci-theme-bootstrap -odhcpd -odhcp6c -ppp -ip6tables -kmod-ipt-nat6 -firewall -luci-app-firewall -luci-mod-admin-full -rpcd-mod-iwinfo -luci-proto-relay -kmod-usb* -kmod-leds* -kmod-gpio* -dropbear -dnsmasq -procd-seccomp" \
+            PACKAGES="wpad-basic-mbedtls luci-base luci-theme-bootstrap -odhcpd -odhcp6c -ppp -ip6tables -kmod-ipt-nat6 -firewall -luci-app-firewall -rpcd-mod-iwinfo -luci-proto-relay -kmod-usb* -kmod-leds* -kmod-gpio* -dnsmasq -dropbear -procd-seccomp" \
             FILES=../files/
-          ls bin/targets/ramips/mt7620/*sysupgrade.bin || echo "No bin found - check log for which package failed"
+          ls bin/targets/ramips/mt7620/*sysupgrade.bin || echo "No bin found - check log"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bl401-ultra-minimal-22.03.7
+          name: bl401-minimal-22.03.7-no-clash
           path: openwrt-imagebuilder-22.03.7-ramips-mt7620.Linux-x86_64/bin/targets/ramips/mt7620/*sysupgrade.bin
           if-no-files-found: warn
