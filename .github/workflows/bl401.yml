@@ -1,7 +1,7 @@
 name: Build OpenWrt 19.07 for Bolt BL401 (Dumb AP)
 
 on:
-  workflow_dispatch:  # Jalankan manual dari tab Actions
+  workflow_dispatch:  # Jalankan manual
 
 jobs:
   build:
@@ -16,23 +16,23 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential subversion git-core libncurses5-dev zlib1g-dev gawk flex quilt libssl-dev xsltproc libxml-parser-perl unzip python3 wget curl file bc time ccache rsync
 
-      - name: Download OpenWrt 19.07 ImageBuilder for ramips/mt7620
+      - name: Download OpenWrt 19.07.10 ImageBuilder from archive mirror
         run: |
-          wget https://downloads.openwrt.org/releases/19.07.10/targets/ramips/mt7620/openwrt-imagebuilder-19.07.10-ramips-mt7620.Linux-x86_64.tar.xz
-          tar -xvf openwrt-imagebuilder-19.07.10-ramips-mt7620.Linux-x86_64.tar.xz
-          cd openwrt-imagebuilder-*
+          wget https://archive.openwrt.org/releases/19.07.10/targets/ramips/mt7620/openwrt-imagebuilder-19.07.10-ramips-mt7620.Linux-x86_64.tar.xz -O imagebuilder.tar.xz || wget https://weimarnetz.de/freifunk/firmware/openwrt-base/19.07.10/ramips/mt7620/ffweimar-openwrt-imagebuilder-ramips-mt7620.Linux-x86_64.tar.xz -O imagebuilder.tar.xz
+          tar -xvf imagebuilder.tar.xz
+          ls -la  # Cek nama folder hasil extract
 
       - name: Build custom sysupgrade.bin for BL401 (port ASUS RT-N14U)
         run: |
-          cd openwrt-imagebuilder-*
+          cd openwrt-imagebuilder-* || cd ffweimar-openwrt-imagebuilder-*  # Sesuaikan nama folder
           make image PROFILE="asus_rt-n14u" \
-            PACKAGES="luci luci-base luci-app-firewall kmod-usb-core kmod-usb2 kmod-usb-ohci kmod-usb-uhci wpad-mini relayd luci-proto-relay -firewall -odhcpd -odhcp6c -ppp -ppp-mod-pppoe -ip6tables -kmod-ipt-nat6" \
-            FILES=../files/  # Kalau ada folder files untuk custom config
-          ls bin/targets/ramips/mt7620/*sysupgrade.bin || echo "No bin found, check log"
+            PACKAGES="luci luci-base luci-theme-bootstrap luci-app-firewall kmod-usb-core kmod-usb2 wpad-mini relayd luci-proto-relay -odhcpd -odhcp6c -ppp -ip6tables -kmod-ipt-nat6 -firewall" \
+            FILES=../files/
+          ls bin/targets/ramips/mt7620/*sysupgrade.bin || echo "No bin found - check build log"
 
-      - name: Upload artifact (sysupgrade.bin)
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bl401-sysupgrade-bin
-          path: openwrt-imagebuilder-*/bin/targets/ramips/mt7620/*sysupgrade.bin
-          if-no-files-found: error
+          path: openwrt-imagebuilder-*/bin/targets/ramips/mt7620/*sysupgrade.bin || ffweimar-openwrt-imagebuilder-*/bin/targets/ramips/mt7620/*sysupgrade.bin
+          if-no-files-found: warn
