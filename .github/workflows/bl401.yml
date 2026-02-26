@@ -1,4 +1,4 @@
-name: Build OpenWrt 22.03.7 for Bolt BL401 (Dumb AP)
+name: Build OpenWrt 22.03.7 Ultra Minimal for BL401
 
 on:
   workflow_dispatch:
@@ -16,24 +16,26 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential subversion git-core libncurses5-dev zlib1g-dev gawk flex quilt libssl-dev xsltproc libxml-parser-perl unzip python3 wget curl file bc time ccache rsync
 
-      - name: Download OpenWrt 22.03.7 ImageBuilder for ramips/mt7620
+      - name: Download OpenWrt 22.03.7 ImageBuilder
         run: |
           wget https://downloads.openwrt.org/releases/22.03.7/targets/ramips/mt7620/openwrt-imagebuilder-22.03.7-ramips-mt7620.Linux-x86_64.tar.xz -O imagebuilder.tar.xz
           tar -xvf imagebuilder.tar.xz
           ls -la
 
-      - name: Build custom sysupgrade.bin for BL401 (port ASUS RT-N14U)
+      - name: Build ultra minimal sysupgrade.bin for BL401
         run: |
           cd openwrt-imagebuilder-22.03.7-ramips-mt7620.Linux-x86_64
-          make info | grep -i n14u  # Debug: Harus muncul asus_rt-n14u
+          make info | grep -i n14u  # Debug profile
           make image PROFILE="asus_rt-n14u" \
-            PACKAGES="luci-base luci-theme-bootstrap luci-app-firewall wpad-mini relayd luci-proto-relay kmod-usb-core kmod-usb2 -odhcpd -odhcp6c -ppp -ip6tables -kmod-ipt-nat6 -firewall -luci-mod-admin-full -rpcd-mod-iwinfo -luci-proto-ppp" \
+            PACKAGES="wpad-mini luci-base luci-theme-bootstrap -odhcpd -odhcp6c -ppp -ip6tables -kmod-ipt-nat6 -firewall -luci-app-firewall -luci-mod-admin-full -rpcd-mod-iwinfo -luci-proto-relay -kmod-usb* -kmod-leds* -kmod-gpio* -dropbear -dnsmasq -procd-seccomp" \
             FILES=../files/
-          ls bin/targets/ramips/mt7620/*sysupgrade.bin || echo "No bin found - check log"
+          ls bin/targets/ramips/mt7620/*sysupgrade.bin || echo "No bin found - check log for which package failed"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bl401-sysupgrade-22.03.7
+          name: bl401-ultra-minimal-22.03.7
+          path: openwrt-imagebuilder-22.03.7-ramips-mt7620.Linux-x86_64/bin/targets/ramips/mt7620/*sysupgrade.bin
+          if-no-files-found: warn          name: bl401-sysupgrade-22.03.7
           path: openwrt-imagebuilder-22.03.7-ramips-mt7620.Linux-x86_64/bin/targets/ramips/mt7620/*sysupgrade.bin
           if-no-files-found: warn
